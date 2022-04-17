@@ -1,6 +1,6 @@
 {
-  "name": "jolly-roger-subgraph",
-  "description": "Subgraph (thegraph.com) for Jolly Roger",
+  "name": "leverage-long-position-monorepo-subgraph",
+  "description": "Subgraph (thegraph.com) for Leverage Long Position Monorepo",
   "private": true,
   "version": "0.0.1",
   "devDependencies": {

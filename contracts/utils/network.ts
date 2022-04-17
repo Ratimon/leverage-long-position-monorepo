@@ -1,8 +1,18 @@
 import 'dotenv/config';
 import {HDAccountsUserConfig, HttpNetworkUserConfig, NetworksUserConfig} from 'hardhat/types';
+
+const CHAINSTACK_NODEUSERNAME = process.env.CHAINSTACK_NODEUSERNAME;
+const CHAINSTACK_PASSWORD= process.env.CHAINSTACK_PASSWORD;
+const CHAINSTACK_RPC_ENDPOINT= process.env.CHAINSTACK_RPC_ENDPOINT;
+
 export function node_url(networkName: string): string {
   if (networkName) {
-    const uri = process.env['ETH_NODE_URI_' + networkName.toUpperCase()];
+    let uri = process.env['ETH_NODE_URI_' + networkName.toUpperCase()];
+
+    if(networkName == "bscmainnetfork"){
+      uri = `https://${CHAINSTACK_NODEUSERNAME}:${CHAINSTACK_PASSWORD}@${CHAINSTACK_RPC_ENDPOINT}` //https://USERNAME:PASSWORD@RPC_ENDPOINT
+    }
+
     if (uri && uri !== '') {
       return uri;
     }

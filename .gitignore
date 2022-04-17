@@ -1,5 +1,6 @@
+.DS_store
 .env*
 !.env*.default
 .newsh.json
 node_modules
-jolly-roger.code-workspace
+leverage-long-position-monorepo.code-workspace

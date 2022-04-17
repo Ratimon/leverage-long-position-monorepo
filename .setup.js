@@ -22,7 +22,7 @@ function copyFromDefault(p) {
   copyUnlessExists(`${p}.default`, p);
 }
 
-['jolly-roger.code-workspace', '.env', '.env.production', '.env.staging'].map(copyFromDefault);
+['leverage-long-position-monorepo.code-workspace', '.env', '.env.production', '.env.staging'].map(copyFromDefault);
 
 switch (process.platform) {
   case 'win32':
