@@ -38,8 +38,8 @@
 <NavBar
   links={[
     {href: url(''), title: 'Home'},
-    {href: url('demo/'), title: 'Demo'},
-    {href: url('openPosition/'), title: 'open position'},
+    {href: url('openPosition/'), title: 'Open Position'},
+    {href: url('closePosition/'), title: 'Close Position'},
   ]}
 />
 
