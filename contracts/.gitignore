@@ -17,7 +17,7 @@ yalc.lock
 
 contractsInfo.json
 deployments/hardhat
-deployments/localhost
+# deployments/localhost
 
 .dapp/
 _lib/

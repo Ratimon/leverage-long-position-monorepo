@@ -4,185 +4,359 @@
   import Blockie from '$lib/components/generic/CanvasBlockie.svelte';
   import {wallet, flow, chain, fallback} from '$lib/blockchain/wallet';
   import {BigNumber} from '@ethersproject/bignumber';
+  import {formatUnits} from '@ethersproject/units';
+
   import {onMount} from 'svelte';
   import {combine} from 'leverage-long-position-monorepo-common';
 
-  const name = 'Leverage';
-  let message = '';
-  let balanceInEth;
-  let valueToSendInWEI;
+  let depositAmount;
+  let borrowAmount;
+  let totalETH;
+  let UniSwapOutput;
+  let currentETHPrice;
+  let pnl;
+  let isPositionActive;
 
-  async function setMessage() {
-    await flow.execute((contracts) => contracts.GreetingsRegistry.setMessage(message));
-  }
-
-  async function selectMaxvalue() {
-    // valueToSend = await fetchBalance();
-
-    valueToSendInWEI = await fetchBalance();
-    //
-    valueToSendInWEI = BigNumber.from(valueToSendInWEI).div('1000000000000000000').toNumber();
-  }
-
-  async function openPosition() {
+  async function closePosition() {
     flow.execute(async (contracts) => {
       try {
-        console.log('wallet', wallet);
-        console.log('wallet', contracts);
-
-        let tx = await wallet.contracts.LongETHPosition.openPosition({
-          value: BigNumber.from(`${valueToSendInWEI}`).mul('1000000000000000000'),
-        });
+        let tx = await wallet.contracts.LongETHPosition.closePosition();
         await tx.wait();
       } catch (e) {
         console.log(e);
       }
     });
-
-    // const balanceInWei = await fetchBalance();
-    // balanceInEth = BigNumber.from(balanceInWei).div('1000000000000000000');
   }
 
-  async function fetchBalance(): Promise<BigNumber> {
-    const provider = wallet.provider || wallet.fallbackProvider;
-
-    // const contracts = wallet.contracts || fallback.contracts;
-    // if (!contracts) {
-    //   return Promise.reject('no contract');
-    // }
+  async function fetchIsPositionActive(): Promise<boolean> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
 
     try {
-      return await provider.getBalance(wallet.address);
+      return await contracts.LongETHPosition.isCurrentPositionActive();
     } catch (err) {
       console.log(err);
     }
   }
 
-  //   function convertToETH(underlyingAmount) {
-  //     return underlyingAmount;
-  //   }
+  async function fetchDepositAmount(): Promise<BigNumber> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
+    try {
+      return await contracts.LongETHPosition.getCurrentDepositAmount();
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function fetchBorrowAmount(): Promise<BigNumber> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
+
+    try {
+      return await contracts.LongETHPosition.getCurrentBorrowAmount();
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function fetchUniSwapOutput(): Promise<BigNumber> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
+
+    try {
+      return await contracts.LongETHPosition.getExpectedUniSwapOutput();
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function fetchTotalExposure(): Promise<BigNumber> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
+
+    try {
+      return await contracts.LongETHPosition.getTotalExposure();
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function fetchCurrentEthPrice(): Promise<BigNumber> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
+
+    try {
+      return await contracts.LongETHPosition.getCurrentETHPrice();
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function fetchPNL(): Promise<BigNumber> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
+
+    try {
+      return await contracts.LongETHPosition.getExpectedProfitInUsd();
+    } catch (err) {
+      console.log(err);
+    }
+  }
 
   onMount(() => {
-    console.log('mount demo', {
+    console.log('mount closePosition', {
       combine: combine(wallet.address || '0x0000000000000000000000000000000000000000', 'hi').toString(),
     });
   });
 
-  //   wallet.subscribe(async ($wallet) => {
-  //     if (!balance && $chain.state === 'Ready') {
-  //       balance = $wallet.balance;
-  //       // lastAddress = $wallet.address;
-  //       //     Sentry.setUser({address: $wallet.address});
-  //     }
-  //   });
-
   chain.subscribe(async ($chain) => {
-    if (!balanceInEth && $chain.state === 'Ready') {
-      const balanceInWei = await fetchBalance();
-      balanceInEth = BigNumber.from(balanceInWei).div('1000000000000000000');
+    if (!depositAmount && $chain.state === 'Ready') {
+      const depositInWei = await fetchDepositAmount();
+      //   depositAmount = BigNumber.from(depositInWei).div('1000000000000000000');
+      depositAmount = formatUnits(depositInWei, 18);
+
+      //   depositAmount = await fetchDepositAmount();
     }
   });
 
   fallback.subscribe(async ($fallback) => {
-    if (!balanceInEth && $fallback.state === 'Ready') {
-      const balanceInWei = await fetchBalance();
-      balanceInEth = BigNumber.from(balanceInWei).div('1000000000000000000');
+    if (!depositAmount && $fallback.state === 'Ready') {
+      const depositInWei = await fetchDepositAmount();
+      //   depositAmount = BigNumber.from(depositInWei).div('1000000000000000000');
+      depositAmount = formatUnits(depositInWei, 18);
+      //   depositAmount = await fetchDepositAmount();
     }
   });
+
+  chain.subscribe(async ($chain) => {
+    if (!borrowAmount && $chain.state === 'Ready') {
+      const borrowInWei = await fetchBorrowAmount();
+      borrowAmount = BigNumber.from(borrowInWei).div('1000000000000000000');
+      //   borrowAmount = formatUnits(borrowInWei, 18);
+    }
+  });
+
+  fallback.subscribe(async ($fallback) => {
+    if (!borrowAmount && $fallback.state === 'Ready') {
+      const borrowInWei = await fetchBorrowAmount();
+      borrowAmount = BigNumber.from(borrowInWei).div('1000000000000000000');
+      //   borrowAmount = formatUnits(borrowInWei, 18);
+    }
+  });
+
+  chain.subscribe(async ($chain) => {
+    if (!UniSwapOutput && $chain.state === 'Ready') {
+      const uniSwapOutputInWei = await fetchUniSwapOutput();
+      UniSwapOutput = BigNumber.from(uniSwapOutputInWei).div('1000000000000000000');
+      //   UniSwapOutput = await fetchUniSwapOutput();
+    }
+  });
+
+  fallback.subscribe(async ($fallback) => {
+    if (!UniSwapOutput && $fallback.state === 'Ready') {
+      const uniSwapOutputInWei = await fetchUniSwapOutput();
+      UniSwapOutput = BigNumber.from(uniSwapOutputInWei).div('1000000000000000000');
+      //   UniSwapOutput = await fetchUniSwapOutput();
+    }
+  });
+
+  chain.subscribe(async ($chain) => {
+    if (!totalETH && $chain.state === 'Ready') {
+      const totalETHInWei = await fetchTotalExposure();
+      totalETH = BigNumber.from(totalETHInWei).div('1000000000000000000');
+      //   totalETH = await fetchTotalExposure();
+    }
+  });
+
+  fallback.subscribe(async ($fallback) => {
+    if (!totalETH && $fallback.state === 'Ready') {
+      const totalETHInWei = await fetchTotalExposure();
+      totalETH = BigNumber.from(totalETHInWei).div('1000000000000000000');
+      //   totalETH = await fetchTotalExposure();
+    }
+  });
+
+  chain.subscribe(async ($chain) => {
+    if (!currentETHPrice && $chain.state === 'Ready') {
+      currentETHPrice = await fetchCurrentEthPrice();
+    }
+  });
+
+  fallback.subscribe(async ($fallback) => {
+    if (!currentETHPrice && $fallback.state === 'Ready') {
+      currentETHPrice = await fetchCurrentEthPrice();
+    }
+  });
+
+  chain.subscribe(async ($chain) => {
+    if (!pnl && $chain.state === 'Ready') {
+      //   const pnlInWei = await fetchPNL();
+      //   pnl = BigNumber.from(pnlInWei).div('1000000000000000000');
+      pnl = await fetchPNL();
+    }
+  });
+
+  fallback.subscribe(async ($fallback) => {
+    if (!pnl && $fallback.state === 'Ready') {
+      //   const pnlInWei = await fetchPNL();
+      //   pnl = BigNumber.from(pnlInWei).div('1000000000000000000');
+      pnl = await fetchPNL();
+    }
+  });
+
+  chain.subscribe(async ($chain) => {
+    if (!isPositionActive && $chain.state === 'Ready') {
+      isPositionActive = await fetchIsPositionActive();
+    }
+  });
+
+  fallback.subscribe(async ($fallback) => {
+    if (!isPositionActive && $fallback.state === 'Ready') {
+      isPositionActive = await fetchIsPositionActive();
+    }
+  });
+
+  function formatError(error): string {
+    try {
+      return JSON.stringify(error, null, '  ');
+    } catch (e) {
+      return e.message || e;
+    }
+  }
 </script>
 
 <section class="py-2 px-4 text-center">
-  <div class="max-w-auto md:max-w-lg mx-auto">
-    <h2 class="text-6xl font-black mb-2 font-heading text-black dark:text-white">
-      {name}
+  <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
+    <!-- <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">My Position</h2> -->
+
+    <!-- <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+      Deposit Amount: {depositAmount} ETH
+    </p>
+
+    <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+      Borrow Amount: {borrowAmount} ETH
+    </p>
+
+    <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">
+      Swap {borrowAmount} to {UniSwapOutput}
     </h2>
 
     <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-      Current Balance: {balanceInEth} ETH
-    </p>
+      Total ETH: {totalETH} ETH
+    </p> -->
 
-    <form class="w-full max-w-sm">
-      <div class="flex items-center border-b border-pink-600 py-2">
-        <input
-          class="appearance-none bg-transparent border-none w-full text-gray-700 dark:text-gray-300 mr-3 py-1 px-2
-                      leading-tight focus:outline-none"
-          type="number"
-          placeholder="0.0 ETH"
-          aria-label="value to send"
-          bind:value={valueToSendInWEI}
-        />
-        <button
-          class="flex-shrink-0 bg-pink-600 hover:bg-pink-700 border-pink-600 hover:border-pink-700 text-sm border-4
-                      text-white py-1 px-2 rounded disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed"
-          type="button"
-          on:click={selectMaxvalue}
-        >
-          MAX
-        </button>
+    <!-- <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">Current ETH Price : {currentETHPrice} ETH</p>
+
+    <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">PNL : {pnl} USD</p> -->
+
+    <!-- <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
+      <div class="space-y-5 sm:flex sm:justify-center sm:space-y-0 sm:space-x-3">
+        <NavButton label="Close Position" blank={true} class="big secondary" on:click={closePosition}>
+          Close Position
+        </NavButton>
       </div>
-      <div class="flex items-center">
+    </div> -->
+
+    <!-- <div class="flex items-center">
         <NavButton
           label="Leverage 1.3"
+          class="big secondary"
           disabled={!valueToSendInWEI || valueToSendInWEI === 0 || typeof valueToSendInWEI != 'number'}
           on:click={openPosition}
         >
           Leverage 1.3
         </NavButton>
-      </div>
-    </form>
+      </div> -->
 
     <WalletAccess>
-      <!-- <form class="w-full max-w-sm">
-          <div class="flex items-center border-b border-pink-600 py-2">
-            <input
-              class="appearance-none bg-transparent border-none w-full text-gray-700 dark:text-gray-300 mr-3 py-1 px-2
-                      leading-tight focus:outline-none"
-              type="text"
-              placeholder="0.0"
-              aria-label="Your Message"
-              bind:value={message}
-            />
-            <button
-              disabled={!valueToSendInWEI || valueToSendInWEI === 0 || typeof valueToSendInWEI != 'number'}
-              on:click={openPosition}
-              class="flex-shrink-0 bg-pink-600 hover:bg-pink-700 border-pink-600 hover:border-pink-700 text-sm border-4
-                      text-white py-1 px-2 rounded disabled:bg-gray-400 disabled:border-gray-400 disabled:cursor-not-allowed"
-              type="button"
-            >
-              Say It!
-            </button>
-          </div>
-        </form> -->
+      {#if $chain.state === 'Ready' || $fallback.state === 'Ready'}
+        <!-- TODO pregenerate  so it can always be viewable without a node-->
+        <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">
+          The Position
+        </h2>
 
-      {#if $wallet.state === 'Ready'}
-        <form class="mt-5 w-full max-w-sm">
-          <div class="flex items-center">
-            <NavButton
-              label="Disconnect"
-              disabled={$wallet.unlocking || $chain.connecting}
-              on:click={() => wallet.disconnect()}
-            >
-              Disconnect
-            </NavButton>
-          </div>
-        </form>
+        {#if isPositionActive == true}
+          {#await isPositionActive}
+            <!-- <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+              Current Balance: {balanceInEth} ETH
+            </p> -->
+          {:then}
+            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+              Deposit Amount: {depositAmount} ETH
+            </p>
+
+            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+              Borrow Amount: {borrowAmount} DAI
+            </p>
+
+            <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">
+              Swap {borrowAmount} DAI to {UniSwapOutput} ETH
+            </h2>
+
+            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+              Total ETH: {totalETH} ETH
+            </p>
+
+            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">Current ETH Price : {currentETHPrice} USD</p>
+
+            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">PNL : {pnl} USD</p>
+
+            <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
+              <div class="space-y-5 sm:flex sm:justify-center sm:space-y-0 sm:space-x-3">
+                <NavButton label="Close Position" blank={true} class="big secondary" on:click={closePosition}>
+                  Close Position
+                </NavButton>
+              </div>
+            </div>
+          {:catch error}
+            <p style="color: red">{formatError(error)}</p>
+          {/await}
+        {:else}
+          <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+            The Position has not been opened yet. Must wait for being opened first !!!
+          </p>
+        {/if}
+
+        {#if $wallet.state === 'Ready'}
+          <form class="mt-5 w-full max-w-sm">
+            <div class="flex items-center">
+              <NavButton
+                label="Disconnect"
+                disabled={$wallet.unlocking || $chain.connecting}
+                on:click={() => wallet.disconnect()}
+              >
+                Disconnect
+              </NavButton>
+            </div>
+          </form>
+        {/if}
+      {:else}
+        <p class="m-6 text-gray-500 dark:text-gray-400 text-xl">Please connect to interact</p>
+
+        <NavButton
+          class="w-24 mx-auto"
+          label="Connect"
+          disabled={$wallet.unlocking || $chain.connecting}
+          on:click={() => flow.connect()}
+        >
+          Connect
+        </NavButton>
       {/if}
     </WalletAccess>
-
-    <!-- <div class="pt-3 pb-4 dark:bg-black bg-white">
-        <h1 class="dark:text-gray-500 text-gray-500 m-4 font-semibold">Use it:</h1>
-        <code id="leverage-long-position-monorepo-command" on:click={select} class="mb-5 text-pink-600 font-black"
-          >npx degit wighawag/leverage-long-position-monorepo your-app-folder</code
-        >
-        <p class="mt-6 text-gray-500">
-          Find out more on
-          <a
-            class="underline"
-            href="https://github.com/wighawag/leverage-long-position-monorepo#readme"
-            target="_blank"
-            rel="noopener">github</a
-          >
-        </p>
-      </div> -->
   </div>
 </section>
