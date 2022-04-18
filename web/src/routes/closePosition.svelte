@@ -127,19 +127,14 @@
   chain.subscribe(async ($chain) => {
     if (!depositAmount && $chain.state === 'Ready') {
       const depositInWei = await fetchDepositAmount();
-      //   depositAmount = BigNumber.from(depositInWei).div('1000000000000000000');
       depositAmount = formatUnits(depositInWei, 18);
-
-      //   depositAmount = await fetchDepositAmount();
     }
   });
 
   fallback.subscribe(async ($fallback) => {
     if (!depositAmount && $fallback.state === 'Ready') {
       const depositInWei = await fetchDepositAmount();
-      //   depositAmount = BigNumber.from(depositInWei).div('1000000000000000000');
       depositAmount = formatUnits(depositInWei, 18);
-      //   depositAmount = await fetchDepositAmount();
     }
   });
 
@@ -147,7 +142,6 @@
     if (!borrowAmount && $chain.state === 'Ready') {
       const borrowInWei = await fetchBorrowAmount();
       borrowAmount = BigNumber.from(borrowInWei).div('1000000000000000000');
-      //   borrowAmount = formatUnits(borrowInWei, 18);
     }
   });
 
@@ -155,7 +149,6 @@
     if (!borrowAmount && $fallback.state === 'Ready') {
       const borrowInWei = await fetchBorrowAmount();
       borrowAmount = BigNumber.from(borrowInWei).div('1000000000000000000');
-      //   borrowAmount = formatUnits(borrowInWei, 18);
     }
   });
 
@@ -163,7 +156,6 @@
     if (!UniSwapOutput && $chain.state === 'Ready') {
       const uniSwapOutputInWei = await fetchUniSwapOutput();
       UniSwapOutput = BigNumber.from(uniSwapOutputInWei).div('1000000000000000000');
-      //   UniSwapOutput = await fetchUniSwapOutput();
     }
   });
 
@@ -171,7 +163,6 @@
     if (!UniSwapOutput && $fallback.state === 'Ready') {
       const uniSwapOutputInWei = await fetchUniSwapOutput();
       UniSwapOutput = BigNumber.from(uniSwapOutputInWei).div('1000000000000000000');
-      //   UniSwapOutput = await fetchUniSwapOutput();
     }
   });
 
@@ -179,7 +170,6 @@
     if (!totalETH && $chain.state === 'Ready') {
       const totalETHInWei = await fetchTotalExposure();
       totalETH = BigNumber.from(totalETHInWei).div('1000000000000000000');
-      //   totalETH = await fetchTotalExposure();
     }
   });
 
@@ -187,7 +177,6 @@
     if (!totalETH && $fallback.state === 'Ready') {
       const totalETHInWei = await fetchTotalExposure();
       totalETH = BigNumber.from(totalETHInWei).div('1000000000000000000');
-      //   totalETH = await fetchTotalExposure();
     }
   });
 
@@ -205,16 +194,12 @@
 
   chain.subscribe(async ($chain) => {
     if (!pnl && $chain.state === 'Ready') {
-      //   const pnlInWei = await fetchPNL();
-      //   pnl = BigNumber.from(pnlInWei).div('1000000000000000000');
       pnl = await fetchPNL();
     }
   });
 
   fallback.subscribe(async ($fallback) => {
     if (!pnl && $fallback.state === 'Ready') {
-      //   const pnlInWei = await fetchPNL();
-      //   pnl = BigNumber.from(pnlInWei).div('1000000000000000000');
       pnl = await fetchPNL();
     }
   });
@@ -242,47 +227,6 @@
 
 <section class="py-2 px-4 text-center">
   <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
-    <!-- <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">My Position</h2> -->
-
-    <!-- <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-      Deposit Amount: {depositAmount} ETH
-    </p>
-
-    <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-      Borrow Amount: {borrowAmount} ETH
-    </p>
-
-    <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">
-      Swap {borrowAmount} to {UniSwapOutput}
-    </h2>
-
-    <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-      Total ETH: {totalETH} ETH
-    </p> -->
-
-    <!-- <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">Current ETH Price : {currentETHPrice} ETH</p>
-
-    <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">PNL : {pnl} USD</p> -->
-
-    <!-- <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
-      <div class="space-y-5 sm:flex sm:justify-center sm:space-y-0 sm:space-x-3">
-        <NavButton label="Close Position" blank={true} class="big secondary" on:click={closePosition}>
-          Close Position
-        </NavButton>
-      </div>
-    </div> -->
-
-    <!-- <div class="flex items-center">
-        <NavButton
-          label="Leverage 1.3"
-          class="big secondary"
-          disabled={!valueToSendInWEI || valueToSendInWEI === 0 || typeof valueToSendInWEI != 'number'}
-          on:click={openPosition}
-        >
-          Leverage 1.3
-        </NavButton>
-      </div> -->
-
     <WalletAccess>
       {#if $chain.state === 'Ready' || $fallback.state === 'Ready'}
         <!-- TODO pregenerate  so it can always be viewable without a node-->
@@ -291,11 +235,7 @@
         </h2>
 
         {#if isPositionActive == true}
-          {#await isPositionActive}
-            <!-- <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-              Current Balance: {balanceInEth} ETH
-            </p> -->
-          {:then}
+          {#await isPositionActive then}
             <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
               Deposit Amount: {depositAmount} ETH
             </p>
