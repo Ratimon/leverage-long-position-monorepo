@@ -9,6 +9,7 @@
   import {onMount} from 'svelte';
   import {combine} from 'leverage-long-position-monorepo-common';
 
+  let currentOwner;
   let depositAmount;
   let borrowAmount;
   let totalETH;
@@ -36,6 +37,18 @@
 
     try {
       return await contracts.LongETHPosition.isCurrentPositionActive();
+    } catch (err) {
+      console.log(err);
+    }
+  }
+
+  async function fetchCurrentOwner(): Promise<string> {
+    const contracts = wallet.contracts || fallback.contracts;
+    if (!contracts) {
+      return Promise.reject('no contract');
+    }
+    try {
+      return await contracts.LongETHPosition.getCurrentPositionOwner();
     } catch (err) {
       console.log(err);
     }
@@ -122,6 +135,18 @@
     console.log('mount closePosition', {
       combine: combine(wallet.address || '0x0000000000000000000000000000000000000000', 'hi').toString(),
     });
+  });
+
+  chain.subscribe(async ($chain) => {
+    if (!currentOwner && $chain.state === 'Ready') {
+      currentOwner = await fetchCurrentOwner();
+    }
+  });
+
+  fallback.subscribe(async ($fallback) => {
+    if (!currentOwner && $fallback.state === 'Ready') {
+      currentOwner = await fetchCurrentOwner();
+    }
   });
 
   chain.subscribe(async ($chain) => {
@@ -236,33 +261,41 @@
 
         {#if isPositionActive == true}
           {#await isPositionActive then}
-            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-              Deposit Amount: {depositAmount} ETH
-            </p>
+            {#if currentOwner == wallet.address}
+              {#await currentOwner then}
+                <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+                  Deposit Amount: {depositAmount} ETH
+                </p>
 
-            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-              Borrow Amount: {borrowAmount} DAI
-            </p>
+                <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+                  Borrow Amount: {borrowAmount} DAI
+                </p>
 
-            <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">
-              Swap {borrowAmount} DAI to {UniSwapOutput} ETH
-            </h2>
+                <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">
+                  Swap {borrowAmount} DAI to {UniSwapOutput} ETH
+                </h2>
 
-            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
-              Total ETH: {totalETH} ETH
-            </p>
+                <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">
+                  Total ETH: {totalETH} ETH
+                </p>
 
-            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">Current ETH Price : {currentETHPrice} USD</p>
+                <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">Current ETH Price : {currentETHPrice} USD</p>
 
-            <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">PNL : {pnl} USD</p>
+                <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">PNL : {pnl} USD</p>
 
-            <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
-              <div class="space-y-5 sm:flex sm:justify-center sm:space-y-0 sm:space-x-3">
-                <NavButton label="Close Position" blank={true} class="big secondary" on:click={closePosition}>
-                  Close Position
-                </NavButton>
-              </div>
-            </div>
+                <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
+                  <div class="space-y-5 sm:flex sm:justify-center sm:space-y-0 sm:space-x-3">
+                    <NavButton label="Close Position" blank={true} class="big secondary" on:click={closePosition}>
+                      Close Position
+                    </NavButton>
+                  </div>
+                </div>
+              {:catch error}
+                <p style="color: red">{formatError(error)}</p>
+              {/await}
+            {:else}
+              <p class="m-6 text-gray-800 dark:text-gray-300 text-xl">Use the same account of position owner</p>
+            {/if}
           {:catch error}
             <p style="color: red">{formatError(error)}</p>
           {/await}
@@ -272,7 +305,7 @@
           </p>
         {/if}
 
-        {#if $wallet.state === 'Ready'}
+        {#if $wallet.address && $wallet.state === 'Ready'}
           <form class="mt-5 w-full max-w-sm">
             <div class="flex items-center">
               <NavButton
@@ -284,8 +317,20 @@
               </NavButton>
             </div>
           </form>
+        {:else}
+          <form class="mt-5 w-full max-w-sm">
+            <div class="flex items-center">
+              <NavButton
+                label="Connect"
+                disabled={$wallet.unlocking || $chain.connecting}
+                on:click={() => flow.connect()}
+              >
+                Connect
+              </NavButton>
+            </div>
+          </form>
         {/if}
-      {:else}
+        <!-- {:else}
         <p class="m-6 text-gray-500 dark:text-gray-400 text-xl">Please connect to interact</p>
 
         <NavButton
@@ -295,7 +340,7 @@
           on:click={() => flow.connect()}
         >
           Connect
-        </NavButton>
+        </NavButton> -->
       {/if}
     </WalletAccess>
   </div>

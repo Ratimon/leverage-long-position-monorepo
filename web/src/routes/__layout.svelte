@@ -9,11 +9,16 @@
   import DarkSwitch from '$lib/components/styled/DarkSwitch.svelte';
 
   import {appDescription, url as appUrl} from '../application.json';
+  import {flow, wallet} from '$lib/blockchain/wallet';
 
   const title = 'Leverage Long Position Monorepo, Template for Decentralised Applications.';
   const description = appDescription;
   const host = appUrl.endsWith('/') ? appUrl : appUrl + '/';
   const previewImage = host + 'preview.png';
+
+  function disconnect() {
+    wallet.disconnect();
+  }
 </script>
 
 <svelte:head>

@@ -31,6 +31,7 @@
   }
 
   async function fetchBalance(): Promise<BigNumber> {
+    console.log('wallet', wallet);
     const provider = wallet.provider || wallet.fallbackProvider;
 
     try {
@@ -63,6 +64,7 @@
     if (!balanceInEth && $chain.state === 'Ready') {
       const balanceInWei = await fetchBalance();
       balanceInEth = formatUnits(balanceInWei, 18);
+      // balanceInEth = BigNumber.from(balanceInWei).div('1000000000000000000');
     }
   });
 
@@ -70,6 +72,7 @@
     if (!balanceInEth && $fallback.state === 'Ready') {
       const balanceInWei = await fetchBalance();
       balanceInEth = formatUnits(balanceInWei, 18);
+      // balanceInEth = BigNumber.from(balanceInWei).div('1000000000000000000');
     }
   });
 
@@ -97,7 +100,7 @@
 <section class="py-2 px-4 text-center">
   <div class="max-w-md mx-auto pt-1 mt-5 space-y-3 md:mt-8 md:space-y-5">
     <WalletAccess>
-      {#if $chain.state === 'Ready' || $fallback.state === 'Ready'}
+      {#if ($chain.state === 'Ready' || $fallback.state === 'Ready') && $wallet.address && $wallet.state === 'Ready'}
         <!-- TODO pregenerate so it can always be viewable without a node-->
 
         <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">Leverage</h2>
@@ -154,20 +157,7 @@
           </p>
         {/if}
 
-        {#if $wallet.state === 'Ready'}
-          <form class="mt-5 w-full max-w-sm">
-            <div class="flex items-center">
-              <NavButton
-                label="Disconnect"
-                disabled={$wallet.unlocking || $chain.connecting}
-                on:click={() => wallet.disconnect()}
-              >
-                Disconnect
-              </NavButton>
-            </div>
-          </form>
-        {/if}
-      {:else}
+        <!-- {:else}
         <p class="m-6 text-gray-500 dark:text-gray-400 text-xl">Please connect to interact</p>
 
         <NavButton
@@ -177,7 +167,37 @@
           on:click={() => flow.connect()}
         >
           Connect
-        </NavButton>
+        </NavButton> -->
+      {/if}
+
+      {#if $wallet.address && $wallet.state === 'Ready'}
+        <form class="mt-5 w-full max-w-sm">
+          <div class="flex items-center">
+            <NavButton
+              label="Disconnect"
+              disabled={$wallet.unlocking || $chain.connecting}
+              on:click={() => wallet.disconnect()}
+            >
+              Disconnect
+            </NavButton>
+          </div>
+        </form>
+      {:else}
+        <h2 class="text-3xl tracking-tight font-extrabold text-gray-900 dark:text-gray-100 sm:text-4xl">
+          Connect to Open the Position
+        </h2>
+
+        <form class="mt-5 w-full max-w-sm">
+          <div class="flex items-center">
+            <NavButton
+              label="Connect"
+              disabled={$wallet.unlocking || $chain.connecting}
+              on:click={() => flow.connect()}
+            >
+              Connect
+            </NavButton>
+          </div>
+        </form>
       {/if}
     </WalletAccess>
   </div>
