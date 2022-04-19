@@ -26,6 +26,30 @@ npx degit wighawag/leverage-long-position-monorepo#nft <your-app-folder>
 <br/>
 <!--- -------------------------------------------- -->
 
+# Quick Guide
+
+1. Spinning Up Node ( In [`./contracts`])
+
+```bash
+yarn fork:test mainnet --blockNumber 14518731
+```
+
+This will be stored in `/Deployments/localhost` but it stores only recently deployed one. Then, this will use to build artifact in the next step
+
+2. Building Artifacts to use in frontend ( In [`./contracts`])
+
+```bash
+yarn hardhat export --network localhost --export "./assets/web/contracts.json"
+```
+
+This will generate `contracts.json` to be used in front-end part of monorepo
+
+3. Run to start front-end server ( In [`./web`])
+
+```bash
+pnpm web:dev
+```
+
 # App Setup
 
 ## requirements :
